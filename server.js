@@ -9,12 +9,28 @@ const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 const cron = require('node-cron');
 const fs = require('fs');
+const crypto = require('crypto');
 const app = express();
+
+// ========== PROTECTION CONFIG ==========
+const PROTECTION = {
+    requireSignature: false,  // Set true for extra security
+    requireReferer: false,     // Set true to check referer
+    allowedReferers: ['https://t.me', 'https://web.telegram.org'],
+    secretSalt: process.env.SECRET_SALT || 'osint_protection_salt_2024',
+    maxRequestsPerIPPerHour: 100,
+    blockVPN: false,           // Optional: block known VPN IPs
+    signatureExpiry: 300000    // 5 minutes
+};
+
+// Store for tracking requests
+const requestTracker = new Map();
+const signatureTracker = new Map();
 
 // ========== MASTER API KEYS ==========
 const MASTER_KEYS = {
     subhxco: 'RACKSUN',
-    ftosint: 'nxsahilx928x926',  // CHANGED: was 'sahil-newww'
+    ftosint: 'nxsahilx928x926',
     ayaanmods: 'annonymousai',
     truecallerLeak: 'RATELIMITE-BEIBBkim7bjTAkJIZTIUGPR4FkfNAYoj',
     mistral: 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
@@ -23,9 +39,15 @@ const MASTER_KEYS = {
 
 // ========== ENDPOINT MAPPING ==========
 const ENDPOINT_ALIASES = {
-    'telegram': 'telegram',
-    'tg-lookup': 'tg_lookup',
-    'tg_lookup': 'tg_lookup',
+    // MASTER API
+    'master': 'master_api',
+    
+    // TG TO NUMBER API
+    'tg-to-number': 'tg_to_number',
+    'tg2num': 'tg_to_number',
+    'tg-to-num': 'tg_to_number',
+    
+    // OTHER APIS
     'aadhar': 'aadhar_info',
     'aadhar_info': 'aadhar_info',
     'family': 'family',
@@ -72,11 +94,153 @@ const ENDPOINT_ALIASES = {
     'search': 'search',
     'ai-image-pro': 'ai_image_pro',
     'ai_image_pro': 'ai_image_pro',
-    // NEW GST ENDPOINTS
     'gst': 'gst_info',
     'gst_info': 'gst_info',
     'gst-lookup': 'gst_info'
 };
+
+// ========== PROTECTION FUNCTIONS ==========
+
+// Generate request signature
+function generateSignature(apiKey, timestamp, endpoint, query) {
+    const data = `${apiKey}:${timestamp}:${endpoint}:${JSON.stringify(query)}:${PROTECTION.secretSalt}`;
+    return crypto.createHash('sha256').update(data).digest('hex').substring(0, 32);
+}
+
+// Check if IP is suspicious (VPN/Proxy)
+function isSuspiciousIP(ip) {
+    // You can add VPN detection API here
+    // For now, basic checks
+    const privateIPs = ['10.', '172.16.', '192.168.', '127.'];
+    for (const privateIP of privateIPs) {
+        if (ip.startsWith(privateIP)) return false;
+    }
+    return false; // Change to actual VPN detection if needed
+}
+
+// Rate limit by IP
+function checkIPRateLimit(ip) {
+    const now = Date.now();
+    const hourAgo = now - 3600000;
+    
+    if (!requestTracker.has(ip)) {
+        requestTracker.set(ip, []);
+    }
+    
+    const requests = requestTracker.get(ip).filter(t => t > hourAgo);
+    requestTracker.set(ip, requests);
+    
+    if (requests.length >= PROTECTION.maxRequestsPerIPPerHour) {
+        return false;
+    }
+    
+    requests.push(now);
+    requestTracker.set(ip, requests);
+    return true;
+}
+
+// Clean old signatures
+setInterval(() => {
+    const now = Date.now();
+    for (const [sig, time] of signatureTracker.entries()) {
+        if (now - time > PROTECTION.signatureExpiry) {
+            signatureTracker.delete(sig);
+        }
+    }
+}, 60000);
+
+// Protection middleware
+function antiScrapingMiddleware(req, res, next) {
+    const clientIp = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
+    
+    // Check IP rate limit
+    if (!checkIPRateLimit(clientIp)) {
+        return res.json({ 
+            error: 'Too many requests from this IP', 
+            contact: '@bmw_aura5',
+            retryAfter: '1 hour'
+        });
+    }
+    
+    // Check suspicious IP (VPN/Proxy)
+    if (PROTECTION.blockVPN && isSuspiciousIP(clientIp)) {
+        return res.json({ 
+            error: 'VPN/Proxy not allowed', 
+            contact: '@bmw_aura5' 
+        });
+    }
+    
+    // Check referer if required
+    if (PROTECTION.requireReferer) {
+        const referer = req.headers.referer;
+        if (!referer) {
+            return res.json({ 
+                error: 'Referer header required', 
+                contact: '@bmw_aura5' 
+            });
+        }
+        
+        const isAllowed = PROTECTION.allowedReferers.some(allowed => referer.startsWith(allowed));
+        if (!isAllowed) {
+            return res.json({ 
+                error: 'Invalid referer', 
+                contact: '@bmw_aura5' 
+            });
+        }
+    }
+    
+    next();
+}
+
+// HMAC signature middleware (optional - enable for extra security)
+function signatureMiddleware(req, res, next) {
+    if (!PROTECTION.requireSignature) {
+        return next();
+    }
+    
+    const signature = req.headers['x-api-signature'];
+    const timestamp = req.headers['x-api-timestamp'];
+    const apiKey = req.query.key || req.body.key;
+    const endpoint = req.params.endpoint;
+    
+    if (!signature || !timestamp) {
+        return res.json({ 
+            error: 'Signature and timestamp required', 
+            contact: '@bmw_aura5',
+            note: 'Add headers: x-api-signature, x-api-timestamp'
+        });
+    }
+    
+    // Check timestamp expiry
+    const now = Date.now();
+    const requestTime = parseInt(timestamp);
+    if (Math.abs(now - requestTime) > PROTECTION.signatureExpiry) {
+        return res.json({ 
+            error: 'Request expired', 
+            contact: '@bmw_aura5' 
+        });
+    }
+    
+    // Check for replay attack
+    if (signatureTracker.has(signature)) {
+        return res.json({ 
+            error: 'Replay attack detected', 
+            contact: '@bmw_aura5' 
+        });
+    }
+    
+    // Generate and verify signature
+    const expectedSignature = generateSignature(apiKey, timestamp, endpoint, req.query);
+    if (signature !== expectedSignature) {
+        return res.json({ 
+            error: 'Invalid signature', 
+            contact: '@bmw_aura5' 
+        });
+    }
+    
+    signatureTracker.set(signature, now);
+    next();
+}
 
 // ========== DATABASE SETUP ==========
 const dataDir = path.join(__dirname, 'data');
@@ -164,6 +328,14 @@ db.serialize(() => {
         is_active BOOLEAN DEFAULT 1
     )`);
 
+    // Blacklisted IPs table for persistent ban
+    db.run(`CREATE TABLE IF NOT EXISTS blacklisted_ips (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip_address TEXT UNIQUE,
+        reason TEXT,
+        banned_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
     // Create HEAD ADMIN
     db.get(`SELECT * FROM users WHERE username = 'main'`, [], (err, row) => {
         if (!row) {
@@ -184,45 +356,44 @@ db.serialize(() => {
         }
     });
 
-    // Insert ALL APIs (UPDATED with Telegram Lookup and GST)
+    // Insert APIs
     db.get(`SELECT COUNT(*) as count FROM available_apis`, [], (err, row) => {
         if (row && row.count === 0) {
             const apis = [
-                ['telegram', '🤖 Telegram ID Info', 'telegram', 'id', '{"id":"7530266953"}', 'Get Telegram account details via tgidinfo', '1'],
-                ['tg_lookup', '📞 Telegram Lookup', 'tg-lookup', 'term', '{"term":"7530266953"}', 'Telegram number lookup via subhxcosmo API', '1'],
-                ['aadhar_info', '🆔 Aadhar Details', 'aadhar', 'num', '{"num":"652507323571"}', 'Aadhar to personal details (Name, Mobile, Address)', '1'],
-                ['family', '👨‍👩‍👧‍👦 Family Details', 'family', 'num', '{"num":"984154610245"}', 'Family relationship lookup from Aadhaar', '1'],
+                ['master_api', '🔧 Master API', 'master', 'query', '{"query":"search term"}', 'Master API endpoint', '1'],
+                ['tg_to_number', '📞 TG to Number', 'tg-to-number', 'username', '{"username":"@None_usernam3"}', 'Get mobile number from Telegram username', '1'],
+                ['aadhar_info', '🆔 Aadhar Details', 'aadhar', 'num', '{"num":"652507323571"}', 'Aadhar to personal details', '1'],
+                ['family', '👨‍👩‍👧‍👦 Family Details', 'family', 'num', '{"num":"984154610245"}', 'Family relationship lookup', '1'],
                 ['num_india', '🇮🇳 Indian Number Info', 'num-india', 'num', '{"num":"9876543210"}', 'Indian mobile number details', '1'],
                 ['num_pak', '🇵🇰 Pakistani Number', 'num-pak', 'number', '{"number":"03001234567"}', 'Pakistani mobile number lookup', '1'],
                 ['name_details', '👤 Name to Details', 'name-details', 'name', '{"name":"abhiraaj"}', 'Name information search', '1'],
-                ['bank_info', '🏦 Bank IFSC Info', 'bank', 'ifsc', '{"ifsc":"SBIN0001234"}', 'Bank branch details from IFSC', '1'],
-                ['pan_info', '📄 PAN Card Info', 'pan', 'pan', '{"pan":"AXDPR2606K"}', 'PAN card details validation', '1'],
-                ['vehicle_info', '🚗 Vehicle Full Info', 'vehicle', 'vehicle', '{"vehicle":"UP50P5434"}', 'Complete vehicle registration details', '1'],
-                ['rc_info', '📋 RC Details', 'rc', 'owner', '{"owner":"HR26EV0001"}', 'Registration certificate information', '1'],
+                ['bank_info', '🏦 Bank IFSC Info', 'bank', 'ifsc', '{"ifsc":"SBIN0001234"}', 'Bank branch details', '1'],
+                ['pan_info', '📄 PAN Card Info', 'pan', 'pan', '{"pan":"AXDPR2606K"}', 'PAN card details', '1'],
+                ['vehicle_info', '🚗 Vehicle Info', 'vehicle', 'vehicle', '{"vehicle":"UP50P5434"}', 'Vehicle registration details', '1'],
+                ['rc_info', '📋 RC Details', 'rc', 'owner', '{"owner":"HR26EV0001"}', 'RC information', '1'],
                 ['ip_info', '🌐 IP Geolocation', 'ip', 'ip', '{"ip":"8.8.8.8"}', 'IP address location', '1'],
                 ['pincode_info', '📍 Pincode Info', 'pincode', 'pin', '{"pin":"110001"}', 'Area details from pincode', '1'],
-                ['git_info', '🐙 GitHub User', 'git', 'username', '{"username":"octocat"}', 'GitHub profile information', '1'],
+                ['git_info', '🐙 GitHub User', 'git', 'username', '{"username":"octocat"}', 'GitHub profile', '1'],
                 ['bgmi_info', '🎮 BGMI Player', 'bgmi', 'uid', '{"uid":"5121439477"}', 'BGMI player stats', '1'],
-                ['ff_info', '🔫 FreeFire ID', 'ff', 'uid', '{"uid":"123456789"}', 'FreeFire player information', '1'],
+                ['ff_info', '🔫 FreeFire ID', 'ff', 'uid', '{"uid":"123456789"}', 'FreeFire player info', '1'],
                 ['ai_image', '🎨 AI Image Gen', 'ai-image', 'prompt', '{"prompt":"cyberpunk cat"}', 'Generate AI images', '1'],
-                ['insta_info', '📸 Instagram Info', 'insta', 'username', '{"username":"ankit.vaid"}', 'Instagram profile scraper', '1'],
-                ['snapchat', '👻 Snapchat Profile', 'snapchat', 'username', '{"username":"priyapanchal272"}', 'Get Snapchat profile info, subscribers, stories', '1'],
-                ['mistral', '🤖 Mistral AI Chat', 'mistral', 'message', '{"message":"What is AI?"}', 'Chat with Mistral AI', '1'],
-                ['aadhaar_family', '👨‍👩‍👧‍👦 Aadhaar Family Extended', 'aadhaar-family', 'id', '{"id":"701984830542"}', 'Complete family details from Aadhaar', '3'],
+                ['insta_info', '📸 Instagram Info', 'insta', 'username', '{"username":"ankit.vaid"}', 'Instagram profile', '1'],
+                ['snapchat', '👻 Snapchat Profile', 'snapchat', 'username', '{"username":"priyapanchal272"}', 'Snapchat profile', '1'],
+                ['mistral', '🤖 Mistral AI', 'mistral', 'message', '{"message":"What is AI?"}', 'Chat with Mistral AI', '1'],
+                ['aadhaar_family', '👨‍👩‍👧‍👦 Aadhaar Family', 'aadhaar-family', 'id', '{"id":"701984830542"}', 'Family from Aadhaar', '3'],
                 ['website_scraper', '🌐 Website Scraper', 'website-scraper', 'url', '{"url":"https://example.com"}', 'Extract data from websites', '4'],
-                ['ip_advanced', '🌍 IP Advanced', 'ip-advanced', 'ip', '{"ip":"8.8.8.8"}', 'Advanced IP geolocation with ISP data', '1'],
-                ['pincode_advanced', '📍 Pincode Advanced', 'pincode-advanced', 'pin', '{"pin":"110001"}', 'Complete post office details from pincode', '1'],
-                ['country_info', '🏳️ Country Info', 'country-info', 'country', '{"country":"india"}', 'Full country information, flag, currency, language', '1'],
-                ['search', '🔍 Search Anything', 'search', 'q', '{"q":"era"}', 'Search anything anonymously (DuckDuckGo)', '1'],
+                ['ip_advanced', '🌍 IP Advanced', 'ip-advanced', 'ip', '{"ip":"8.8.8.8"}', 'Advanced IP geolocation', '1'],
+                ['pincode_advanced', '📍 Pincode Advanced', 'pincode-advanced', 'pin', '{"pin":"110001"}', 'Complete post office details', '1'],
+                ['country_info', '🏳️ Country Info', 'country-info', 'country', '{"country":"india"}', 'Full country information', '1'],
+                ['search', '🔍 Search', 'search', 'q', '{"q":"era"}', 'Search anonymously', '1'],
                 ['ai_image_pro', '🎨 AI Image Pro', 'ai-image-pro', 'prompt', '{"prompt":"beautiful sunset"}', 'Advanced AI image generation', '2'],
-                // NEW GST API
-                ['gst_info', '🏢 GST Number Info', 'gst-info', 'number', '{"number":"24AAACC1206D1ZM"}', 'Get GST registration details, business info, address, PAN', '1']
+                ['gst_info', '🏢 GST Info', 'gst-info', 'number', '{"number":"24AAACC1206D1ZM"}', 'GST registration details', '1']
             ];
 
             apis.forEach(api => {
                 db.run(`INSERT INTO available_apis (name, display_name, endpoint, required_params, example_params, description, level) VALUES (?, ?, ?, ?, ?, ?, ?)`, api);
             });
-            console.log('✅ 28 APIs inserted (including Telegram Lookup and GST)');
+            console.log('✅ 28 APIs inserted');
         }
     });
 });
@@ -235,12 +406,22 @@ app.use(express.json());
 app.use(express.static('public'));
 app.use(cors());
 
+// Apply protection middleware
+app.use(antiScrapingMiddleware);
+
 app.use(session({
     secret: 'osint_secret_2024',
     resave: false,
     saveUninitialized: false,
     cookie: { maxAge: 24 * 60 * 60 * 1000 }
 }));
+
+// Check blacklisted IP
+function isBlacklisted(ip, callback) {
+    db.get('SELECT * FROM blacklisted_ips WHERE ip_address = ?', [ip], (err, row) => {
+        callback(err, !!row);
+    });
+}
 
 const globalLimiter = rateLimit({
     windowMs: 60 * 1000,
@@ -342,54 +523,52 @@ function getCount(apiKey, date, hour, minute) {
 function incrementCount(apiKey, date, hour, minute) {
     return new Promise((resolve) => {
         const query = `INSERT INTO rate_limit_tracking (api_key, date, hour, minute, requests)
-                       VALUES (?, ?, ?, ?, 1)`;
+                       VALUES (?, ?, ?, ?, 1)
+                       ON CONFLICT(api_key, date, hour, minute) 
+                       DO UPDATE SET requests = requests + 1`;
         const params = [apiKey, date, hour !== null ? hour : 0, minute !== null ? minute : 0];
         db.run(query, params, () => resolve());
     });
 }
 
-// ========== API PROXY MAP (UPDATED with Telegram Lookup and GST) ==========
+// ========== API PROXY MAP ==========
 const apiProxyMap = {
-    'telegram': (p) => `https://ft-osint-api.duckdns.org/api/tgidinfo?key=${MASTER_KEYS.ftosint}&id=${p.id || p.term || p.number}`,
-    'tg-lookup': (p) => `http://Api.subhxcosmo.in/api?key=RACK2&type=tg&term=${p.term || p.id || p.username}`,
-    'aadhar': (p) => `https://ayush-multi-api.vercel.app/api/adhar?term=${p.num || p.id}`,
+    'tg_to_number': (p) => {
+        let username = p.username || p.info || p.term || p.id;
+        if (username && !username.startsWith('@')) {
+            username = '@' + username;
+        }
+        return `http://ft-osint-api.duckdns.org/api/tg?key=${MASTER_KEYS.ftosint}&info=${encodeURIComponent(username)}`;
+    },
+    'aadhar_info': (p) => `https://ayush-multi-api.vercel.app/api/adhar?term=${p.num || p.id}`,
     'family': (p) => `https://ft-osint-api.duckdns.org/api/adharfamily?key=${MASTER_KEYS.ftosint}&num=${p.term || p.id || p.num}`,
-    'num-india': (p) => {
-        const number = p.num || p.number || p.phone;
-        return `https://ft-osint-api.duckdns.org/api/number?key=${MASTER_KEYS.ftosint}&num=${number}`;
-    },
-    'num-pak': (p) => {
-        const number = p.number || p.num;
-        return `https://ft-osint-api.duckdns.org/api/pk?key=${MASTER_KEYS.ftosint}&number=${number}`;
-    },
-    'name-details': (p) => {
-        const name = p.name || p.term || p.query || p.username;
-        return `https://ft-osint-api.duckdns.org/api/name?key=${MASTER_KEYS.ftosint}&name=${encodeURIComponent(name)}`;
-    },
-    'bank': (p) => `https://ft-osint-api.duckdns.org/api/ifsc?key=${MASTER_KEYS.ftosint}&ifsc=${p.ifsc}`,
-    'pan': (p) => `https://ft-osint-api.duckdns.org/api/pan?key=${MASTER_KEYS.ftosint}&pan=${p.pan}`,
-    'vehicle': (p) => `https://vvvin-ng.vercel.app/lookup?rc=${p.vehicle || p.rc || p.term}`,
-    'rc': (p) => `https://ft-osint-api.duckdns.org/api/rc?key=${MASTER_KEYS.ftosint}&owner=${p.owner}`,
-    'ip': (p) => `https://ft-osint-api.duckdns.org/api/ip?key=${MASTER_KEYS.ftosint}&ip=${p.ip}`,
-    'pincode': (p) => `https://ft-osint-api.duckdns.org/api/pincode?key=${MASTER_KEYS.ftosint}&pin=${p.pin}`,
-    'git': (p) => `https://ft-osint-api.duckdns.org/api/git?key=${MASTER_KEYS.ftosint}&username=${p.username}`,
-    'bgmi': (p) => `https://ft-osint-api.duckdns.org/api/bgmi?key=${MASTER_KEYS.ftosint}&uid=${p.uid}`,
-    'ff': (p) => `https://ft-osint-api.duckdns.org/api/ff?key=${MASTER_KEYS.ftosint}&uid=${p.uid}`,
-    'ai-image': (p) => `https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${p.prompt}`,
-    'insta': (p) => `https://ft-osint-api.duckdns.org/api/insta?key=${MASTER_KEYS.ftosint}&username=${p.username}`,
+    'num_india': (p) => `https://ft-osint-api.duckdns.org/api/number?key=${MASTER_KEYS.ftosint}&num=${p.num || p.number || p.phone}`,
+    'num_pak': (p) => `https://ft-osint-api.duckdns.org/api/pk?key=${MASTER_KEYS.ftosint}&number=${p.number || p.num}`,
+    'name_details': (p) => `https://ft-osint-api.duckdns.org/api/name?key=${MASTER_KEYS.ftosint}&name=${encodeURIComponent(p.name || p.term)}`,
+    'bank_info': (p) => `https://ft-osint-api.duckdns.org/api/ifsc?key=${MASTER_KEYS.ftosint}&ifsc=${p.ifsc}`,
+    'pan_info': (p) => `https://ft-osint-api.duckdns.org/api/pan?key=${MASTER_KEYS.ftosint}&pan=${p.pan}`,
+    'vehicle_info': (p) => `https://vvvin-ng.vercel.app/lookup?rc=${p.vehicle || p.rc}`,
+    'rc_info': (p) => `https://ft-osint-api.duckdns.org/api/rc?key=${MASTER_KEYS.ftosint}&owner=${p.owner}`,
+    'ip_info': (p) => `https://ft-osint-api.duckdns.org/api/ip?key=${MASTER_KEYS.ftosint}&ip=${p.ip}`,
+    'pincode_info': (p) => `https://ft-osint-api.duckdns.org/api/pincode?key=${MASTER_KEYS.ftosint}&pin=${p.pin}`,
+    'git_info': (p) => `https://ft-osint-api.duckdns.org/api/git?key=${MASTER_KEYS.ftosint}&username=${p.username}`,
+    'bgmi_info': (p) => `https://ft-osint-api.duckdns.org/api/bgmi?key=${MASTER_KEYS.ftosint}&uid=${p.uid}`,
+    'ff_info': (p) => `https://ft-osint-api.duckdns.org/api/ff?key=${MASTER_KEYS.ftosint}&uid=${p.uid}`,
+    'ai_image': (p) => `https://ayaanmods.site/aiimage.php?key=${MASTER_KEYS.ayaanmods}&prompt=${p.prompt}`,
+    'insta_info': (p) => `https://ft-osint-api.duckdns.org/api/insta?key=${MASTER_KEYS.ftosint}&username=${p.username}`,
     'snapchat': (p) => `https://b-c-a-i.vercel.app/profile/${p.username}`,
     'mistral': `mistral-direct`,
-    'aadhaar-family': (p) => `https://aadhar-2-ration.noobgamingv40.workers.dev/api/aadhaar?id=${p.id || p.term}`,
-    'website-scraper': (p) => {
+    'aadhaar_family': (p) => `https://aadhar-2-ration.noobgamingv40.workers.dev/api/aadhaar?id=${p.id || p.term}`,
+    'website_scraper': (p) => {
         let url = p.url;
         if (!url.startsWith('http')) url = 'https://' + url;
         return `https://rohit-website-scrapper-api.vercel.app/zip?url=${encodeURIComponent(url)}`;
     },
-    'ip-advanced': (p) => `https://ipinfo.io/${p.ip || p.query}/json`,
-    'pincode-advanced': (p) => `https://api.postalpincode.in/pincode/${p.pin || p.pincode}`,
-    'country-info': (p) => `https://restcountries.com/v3.1/name/${p.country || p.name}`,
+    'ip_advanced': (p) => `https://ipinfo.io/${p.ip || p.query}/json`,
+    'pincode_advanced': (p) => `https://api.postalpincode.in/pincode/${p.pin || p.pincode}`,
+    'country_info': (p) => `https://restcountries.com/v3.1/name/${p.country || p.name}`,
     'search': (p) => `https://api.duckduckgo.com/?q=${encodeURIComponent(p.q || p.query)}&format=json&no_html=1&skip_disambig=1`,
-    'ai-image-pro': async (p) => {
+    'ai_image_pro': async (p) => {
         const response = await axios.post('https://api-aichat.starnestsolution.com/generate', 
             { prompt: p.prompt, debug: false },
             {
@@ -405,9 +584,20 @@ const apiProxyMap = {
         );
         return response.data;
     },
-    // NEW GST API
-    'gst-info': (p) => `https://gst-info-api-by-abhigyan-codes-1.onrender.com/gst?number=${p.number || p.gst || p.id}`
+    'gst_info': (p) => `https://gst-info-api-by-abhigyan-codes-1.onrender.com/gst?number=${p.number || p.gst || p.id}`
 };
+
+// ========== MASTER API HANDLER ==========
+async function handleMasterAPI(query) {
+    // Master API logic here
+    // This is your main master endpoint handler
+    return {
+        success: true,
+        query: query,
+        timestamp: new Date().toISOString(),
+        data: `Processed query: ${query}`
+    };
+}
 
 // ========== RESPONSE CLEANER ==========
 function cleanResponseData(data, endpoint = null) {
@@ -598,11 +788,14 @@ app.get('/head-admin/dashboard', requireHeadAdmin, (req, res) => {
     db.all('SELECT id, username, role, created_by, created_at FROM users WHERE role != "head_admin"', [], (err, admins) => {
         db.all('SELECT * FROM api_keys ORDER BY created_at DESC', [], (err, keys) => {
             db.get('SELECT SUM(hits) as total_hits FROM api_keys', [], (err, totalHits) => {
-                res.render('head_admin_dashboard', { 
-                    user: req.session.user, 
-                    admins: admins || [], 
-                    keys: keys || [], 
-                    totalHits: (totalHits && totalHits.total_hits) || 0 
+                db.all('SELECT * FROM blacklisted_ips ORDER BY banned_at DESC', [], (err, blacklisted) => {
+                    res.render('head_admin_dashboard', { 
+                        user: req.session.user, 
+                        admins: admins || [], 
+                        keys: keys || [], 
+                        totalHits: (totalHits && totalHits.total_hits) || 0,
+                        blacklisted: blacklisted || []
+                    });
                 });
             });
         });
@@ -626,6 +819,20 @@ app.post('/head-admin/create-admin', requireHeadAdmin, async (req, res) => {
 
 app.post('/head-admin/remove-admin', requireHeadAdmin, (req, res) => {
     db.run('DELETE FROM users WHERE id = ? AND role = "admin"', [req.body.admin_id], function(err) {
+        res.json({ success: !err });
+    });
+});
+
+// Blacklist IP
+app.post('/head-admin/blacklist-ip', requireHeadAdmin, (req, res) => {
+    const { ip, reason } = req.body;
+    db.run('INSERT OR IGNORE INTO blacklisted_ips (ip_address, reason) VALUES (?, ?)', [ip, reason || 'Manual ban'], function(err) {
+        res.json({ success: !err });
+    });
+});
+
+app.post('/head-admin/unblacklist-ip', requireHeadAdmin, (req, res) => {
+    db.run('DELETE FROM blacklisted_ips WHERE id = ?', [req.body.id], function(err) {
         res.json({ success: !err });
     });
 });
@@ -768,11 +975,18 @@ async function handleMistralAI(message) {
 }
 
 // ========== MAIN API HANDLER ==========
-app.all('/api/:endpoint', globalLimiter, async (req, res) => {
+app.all('/api/:endpoint', globalLimiter, signatureMiddleware, async (req, res) => {
     const userKey = req.query.key || req.body.key;
     let endpoint = req.params.endpoint;
     const today = new Date().toISOString().split('T')[0];
     const clientIp = req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'];
+
+    // Check blacklist
+    isBlacklisted(clientIp, (err, blacklisted) => {
+        if (blacklisted) {
+            return res.json({ error: 'Your IP is banned', contact: '@bmw_aura5' });
+        }
+    });
 
     if (!userKey) {
         return res.json({ error: 'API key required', contact: '@bmw_aura5' });
@@ -817,6 +1031,17 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
 
         db.run('UPDATE api_keys SET hits = hits + 1 WHERE id = ?', [keyData.id]);
         db.run(`INSERT INTO daily_calls (api_key, date, calls) VALUES (?, ?, 1) ON CONFLICT(api_key, date) DO UPDATE SET calls = calls + 1`, [userKey, today]);
+
+        // MASTER API endpoint
+        if (endpoint === 'master' || endpoint === 'master_api') {
+            const query = req.query.query || req.q || req.qs || req.query.q;
+            if (!query) {
+                return res.json({ error: 'Query parameter required', example: '/api/master?key=KEY&query=SEARCH' });
+            }
+            const result = await handleMasterAPI(query);
+            const cleanedResult = cleanResponseData(result);
+            return res.json(cleanedResult);
+        }
 
         if (endpoint === 'mistral') {
             const message = req.query.message || req.body.message;
@@ -878,6 +1103,21 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString(), owner: '@bmw_aura5', channel: 'https://t.me/OSINTNXERA' });
 });
 
+// Protection status endpoint
+app.get('/protection-status', (req, res) => {
+    res.json({
+        protection_enabled: true,
+        features: {
+            ip_rate_limit: `${PROTECTION.maxRequestsPerIPPerHour}/hour`,
+            signature_required: PROTECTION.requireSignature,
+            referer_check: PROTECTION.requireReferer,
+            vpn_block: PROTECTION.blockVPN
+        },
+        active_ips: requestTracker.size,
+        active_signatures: signatureTracker.size
+    });
+});
+
 app.use((err, req, res, next) => {
     console.error('Server error:', err);
     res.status(500).json({ error: 'Internal Server Error', message: err.message });
@@ -894,18 +1134,22 @@ cron.schedule('0 0 * * *', () => {
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-    console.log('\n🚀 OSINT API HUB RUNNING');
+    console.log('\n🚀 OSINT API HUB RUNNING WITH PROTECTION');
     console.log(`📍 http://localhost:${PORT}`);
     console.log('=====================================');
     console.log('👑 HEAD ADMIN: main / sahil');
     console.log('🔐 NORMAL ADMIN: admin / aura@1234');
     console.log('=====================================');
+    console.log('🛡️ PROTECTION FEATURES:');
+    console.log(`   - IP Rate Limit: ${PROTECTION.maxRequestsPerIPPerHour}/hour`);
+    console.log(`   - Signature Required: ${PROTECTION.requireSignature}`);
+    console.log(`   - Referer Check: ${PROTECTION.requireReferer}`);
+    console.log(`   - VPN Block: ${PROTECTION.blockVPN}`);
+    console.log(`   - Blacklist Table: Active`);
+    console.log('=====================================');
     console.log('✅ TOTAL 28 ENDPOINTS WORKING');
-    console.log('✅ Telegram APIs:');
-    console.log('   - /api/telegram (tgidinfo)');
-    console.log('   - /api/tg-lookup (subhxcosmo)');
-    console.log('✅ Family API: /api/family (adharfamily)');
-    console.log('✅ GST API: /api/gst-info (number/gst/id)');
+    console.log('✅ Master API: /api/master?key=KEY&query=VALUE');
+    console.log('✅ TG to Number: /api/tg-to-number?key=KEY&username=USERNAME');
     console.log('=====================================');
     console.log('👤 Owner: @bmw_aura5');
     console.log('📢 Channel: https://t.me/OSINTNXERA');
