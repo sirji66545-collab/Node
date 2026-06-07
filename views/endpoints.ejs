@@ -5,229 +5,443 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>API Endpoints - OSINT Hub</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
+        :root {
+            --primary: #667eea;
+            --secondary: #764ba2;
+            --dark: #1a1a2e;
+            --darker: #0f0f1a;
+        }
+        
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
+            color: #fff;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+        
+        .navbar {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(102, 126, 234, 0.3);
+        }
+        
         .navbar-brand {
             font-weight: bold;
-            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
         }
-        .card {
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-            transition: transform 0.3s ease;
+        
+        .hero {
+            background: linear-gradient(135deg, rgba(102,126,234,0.1) 0%, rgba(118,75,162,0.1) 100%);
+            padding: 60px 0;
+            text-align: center;
         }
-        .card:hover {
-            transform: translateY(-5px);
-        }
+        
         .api-card {
-            cursor: pointer;
-            border-left: 4px solid #667eea;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s ease;
             margin-bottom: 20px;
+            overflow: hidden;
         }
+        
         .api-card:hover {
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(102,126,234,0.3);
+            border-color: var(--primary);
         }
+        
+        .api-header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            padding: 15px 20px;
+            cursor: pointer;
+        }
+        
+        .api-body {
+            padding: 20px;
+        }
+        
+        .method-badge {
+            background: var(--primary);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
         .endpoint-url {
-            background: #f0f2f5;
+            background: rgba(0,0,0,0.3);
             padding: 10px;
             border-radius: 8px;
             font-family: monospace;
             font-size: 14px;
             word-break: break-all;
         }
-        .copy-btn {
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .copy-btn:hover {
-            transform: scale(1.1);
-            color: #28a745;
-        }
-        .toast-notify {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 9999;
-        }
-        .badge-api {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-        }
-        .footer {
-            background: rgba(0,0,0,0.8);
+        
+        .param-input {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
             color: white;
-            padding: 20px 0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            width: 100%;
+        }
+        
+        .param-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        .test-btn {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            padding: 8px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .test-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+        
+        .response-area {
+            background: rgba(0,0,0,0.4);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .response-area pre {
+            color: #0f0;
+            margin: 0;
+            white-space: pre-wrap;
+        }
+        
+        .copy-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .copy-btn:hover {
+            background: var(--primary);
+        }
+        
+        .stats-card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        footer {
+            background: rgba(0,0,0,0.3);
+            padding: 30px 0;
+            text-align: center;
             margin-top: 50px;
         }
-        .footer a {
-            color: #ffd700;
-            text-decoration: none;
-        }
+        
         .search-box {
-            margin-bottom: 30px;
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            width: 100%;
+            max-width: 400px;
         }
-        .param-badge {
-            background: #e9ecef;
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-family: monospace;
+        
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2rem; }
+            .api-header h5 { font-size: 1rem; }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-dark bg-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark fixed-top">
         <div class="container">
             <a class="navbar-brand" href="/">
-                <i class="fas fa-terminal"></i> OSINT API Hub
+                <i class="fas fa-shield-alt"></i> OSINT HUB
             </a>
-            <div class="ms-auto">
-                <% if (user) { %>
-                    <a href="/admin/dashboard" class="btn btn-outline-light me-2">
-                        <i class="fas fa-tachometer-alt"></i> Dashboard
-                    </a>
-                    <a href="/logout" class="btn btn-outline-danger">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </a>
-                <% } else { %>
-                    <a href="/login" class="btn btn-outline-light">
-                        <i class="fas fa-lock"></i> Admin Login
-                    </a>
-                <% } %>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="fas fa-home"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/endpoints">
+                            <i class="fas fa-plug"></i> Endpoints
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/docs">
+                            <i class="fas fa-book"></i> Docs
+                        </a>
+                    </li>
+                    <% if (user) { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/dashboard">
+                                <i class="fas fa-tachometer-alt"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/logout">
+                                <i class="fas fa-sign-out-alt"></i> Logout
+                            </a>
+                        </li>
+                    <% } else { %>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/login">
+                                <i class="fas fa-key"></i> Admin Login
+                            </a>
+                        </li>
+                    <% } %>
+                </ul>
             </div>
         </div>
     </nav>
 
+    <div class="hero" style="margin-top: 70px;">
+        <div class="container">
+            <h1 class="display-4">
+                <i class="fas fa-plug"></i> API Endpoints
+            </h1>
+            <p class="lead">Test and explore all available OSINT endpoints</p>
+            <div class="row justify-content-center mt-4">
+                <div class="col-md-6">
+                    <input type="text" id="searchInput" class="search-box" placeholder="🔍 Search endpoints...">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container mt-4">
-        <div class="row">
-            <div class="col-12 text-center">
-                <h1 class="text-white mb-2">
-                    <i class="fas fa-plug"></i> API Endpoints
-                </h1>
-                <p class="text-white-50 mb-4">Click on any API card to copy the endpoint URL</p>
-                
-                <div class="search-box">
-                    <input type="text" id="searchInput" class="form-control form-control-lg" placeholder="🔍 Search APIs..." style="max-width: 500px; margin: 0 auto; border-radius: 50px;">
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <i class="fas fa-code fa-2x mb-2" style="color: var(--primary);"></i>
+                    <div class="stats-number" id="totalApis"><%= apis.length %></div>
+                    <div>Total Endpoints</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <i class="fas fa-check-circle fa-2x mb-2" style="color: #4caf50;"></i>
+                    <div class="stats-number">24/7</div>
+                    <div>Uptime</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <i class="fas fa-tachometer-alt fa-2x mb-2" style="color: var(--primary);"></i>
+                    <div class="stats-number">Instant</div>
+                    <div>Response</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stats-card">
+                    <i class="fab fa-telegram fa-2x mb-2" style="color: #0088cc;"></i>
+                    <div class="stats-number">
+                        <a href="https://t.me/<%= channel.replace('@', '') %>" target="_blank" style="color: white; text-decoration: none;">
+                            <%= channel %>
+                        </a>
+                    </div>
+                    <div>Join Channel</div>
                 </div>
             </div>
         </div>
 
         <div class="row" id="apisContainer">
             <% apis.forEach(api => { %>
-                <div class="col-md-6 col-lg-4 api-item" data-name="<%= api.display_name.toLowerCase() %>" data-endpoint="<%= api.endpoint %>">
-                    <div class="card api-card" onclick="copyToClipboard('<%= api.endpoint %>')">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <h5 class="card-title">
-                                    <%= api.display_name %>
+                <div class="col-md-6 api-item" data-name="<%= api.display_name.toLowerCase() %>" data-endpoint="<%= api.endpoint.toLowerCase() %>">
+                    <div class="api-card">
+                        <div class="api-header" onclick="toggleBody(<%= api.id %>)">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">
+                                    <i class="fas fa-code"></i> <%= api.display_name %>
                                 </h5>
-                                <i class="fas fa-copy copy-btn text-secondary" title="Click to copy URL"></i>
+                                <span class="method-badge">GET</span>
                             </div>
-                            <div class="endpoint-url mt-2">
-                                <code><%= api.endpoint %></code>
+                        </div>
+                        <div class="api-body" id="body-<%= api.id %>" style="display: none;">
+                            <div class="endpoint-url mb-3">
+                                <i class="fas fa-link"></i> <%= baseUrl %><%= api.endpoint %>
                             </div>
-                            <div class="mt-2">
-                                <span class="param-badge">
-                                    <i class="fas fa-code-branch"></i> param: <strong><%= api.param_name %></strong>
-                                </span>
-                                <span class="param-badge ms-2">
-                                    <i class="fas fa-chalkboard-user"></i> example: <%= api.param_example %>
-                                </span>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-key"></i> API Key
+                                </label>
+                                <% if (user && user.role === 'admin') { %>
+                                    <div class="input-group">
+                                        <input type="text" class="param-input" id="apiKey-<%= api.id %>" placeholder="Enter your API key">
+                                        <button class="copy-btn" onclick="copyToClipboard('apiKey-<%= api.id %>')">
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Get your API key from dashboard</small>
+                                <% } else { %>
+                                    <input type="text" class="param-input" id="apiKey-<%= api.id %>" placeholder="Enter your API key">
+                                    <small class="text-muted">Contact <%= owner %> for API key</small>
+                                <% } %>
                             </div>
-                            <p class="card-text mt-2 small text-muted">
-                                <%= api.description %>
-                            </p>
-                            <div class="mt-2">
-                                <code class="small bg-light p-1 rounded">
-                                    GET <%= api.endpoint %>?key=YOUR_API_KEY&<%= api.param_name %>=<%= api.param_example %>
-                                </code>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-<%= api.param_name === 'message' ? 'comment' : 'search' %>"></i> 
+                                    <%= api.param_name.toUpperCase() %>
+                                </label>
+                                <div class="input-group">
+                                    <input type="text" class="param-input" id="param-<%= api.id %>" placeholder="Enter <%= api.param_name %>" value="<%= api.param_example %>">
+                                    <button class="copy-btn" onclick="copyToClipboard('param-<%= api.id %>')">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                                <small class="text-muted"><%= api.description %></small>
+                            </div>
+                            
+                            <button class="test-btn" onclick="testAPI('<%= api.id %>', '<%= api.endpoint %>', '<%= api.param_name %>')">
+                                <i class="fas fa-play"></i> Test Endpoint
+                            </button>
+                            
+                            <div class="response-area" id="response-<%= api.id %>">
+                                <pre id="response-content-<%= api.id %>"></pre>
                             </div>
                         </div>
                     </div>
                 </div>
-            <% }) %>
-        </div>
-        
-        <div class="row mt-4">
-            <div class="col-12 text-center">
-                <div class="alert alert-info">
-                    <i class="fas fa-key"></i> <strong>Need an API key?</strong> 
-                    <a href="/login" class="alert-link">Login to admin panel</a> to generate your API key.
-                </div>
-            </div>
+            <% }); %>
         </div>
     </div>
 
-    <!-- Toast Notification -->
-    <div class="toast-notify">
-        <div id="copyToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2000">
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="fas fa-check-circle"></i> Copied to clipboard!
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        </div>
-    </div>
-
-    <footer class="footer">
-        <div class="container text-center">
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 OSINT HUB | Powered by <strong><%= owner %></strong></p>
             <p>
-                <i class="fab fa-telegram"></i> Owner: <%= owner %> | 
-                <i class="fas fa-link"></i> Channel: <%= channel %>
+                <a href="https://t.me/<%= channel.replace('@', '') %>" target="_blank" style="color: var(--primary);">
+                    <i class="fab fa-telegram"></i> Join our Telegram
+                </a>
             </p>
-            <p class="small mb-0">&copy; 2024 OSINT API Hub | All APIs for educational purposes only</p>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Copy to clipboard function
-        function copyToClipboard(endpoint) {
-            const fullUrl = window.location.origin + endpoint;
-            navigator.clipboard.writeText(fullUrl).then(function() {
-                // Show toast notification
-                const toast = new bootstrap.Toast(document.getElementById('copyToast'));
-                toast.show();
-                
-                // Visual feedback on clicked card
-                event.currentTarget.style.opacity = '0.8';
-                setTimeout(() => {
-                    event.currentTarget.style.opacity = '1';
-                }, 200);
-            }).catch(function(err) {
-                console.error('Could not copy: ', err);
-                alert('Press Ctrl+C to copy: ' + fullUrl);
-            });
+        function toggleBody(id) {
+            const body = document.getElementById(`body-${id}`);
+            if (body.style.display === 'none') {
+                body.style.display = 'block';
+            } else {
+                body.style.display = 'none';
+            }
+        }
+        
+        function copyToClipboard(elementId) {
+            const element = document.getElementById(elementId);
+            element.select();
+            document.execCommand('copy');
+            
+            // Show temporary notification
+            const btn = event.target.closest('.copy-btn');
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+            }, 1000);
+        }
+        
+        async function testAPI(apiId, endpoint, paramName) {
+            const apiKey = document.getElementById(`apiKey-${apiId}`).value;
+            const paramValue = document.getElementById(`param-${apiId}`).value;
+            const responseDiv = document.getElementById(`response-${apiId}`);
+            const responseContent = document.getElementById(`response-content-${apiId}`);
+            
+            if (!apiKey) {
+                responseContent.textContent = JSON.stringify({ error: 'Please enter your API key' }, null, 2);
+                responseDiv.style.display = 'block';
+                return;
+            }
+            
+            if (!paramValue) {
+                responseContent.textContent = JSON.stringify({ error: `Please enter ${paramName}` }, null, 2);
+                responseDiv.style.display = 'block';
+                return;
+            }
+            
+            responseContent.textContent = 'Loading...';
+            responseDiv.style.display = 'block';
+            
+            try {
+                const url = `${window.location.origin}${endpoint}?key=${encodeURIComponent(apiKey)}&${encodeURIComponent(paramName)}=${encodeURIComponent(paramValue)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+                responseContent.textContent = JSON.stringify(data, null, 2);
+            } catch (error) {
+                responseContent.textContent = JSON.stringify({ error: error.message }, null, 2);
+            }
         }
         
         // Search functionality
-        document.getElementById('searchInput').addEventListener('keyup', function() {
-            const searchValue = this.value.toLowerCase();
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
             const items = document.querySelectorAll('.api-item');
             
             items.forEach(item => {
                 const name = item.getAttribute('data-name');
                 const endpoint = item.getAttribute('data-endpoint');
                 
-                if (name.includes(searchValue) || endpoint.includes(searchValue)) {
-                    item.style.display = '';
+                if (name.includes(searchTerm) || endpoint.includes(searchTerm)) {
+                    item.style.display = 'block';
                 } else {
                     item.style.display = 'none';
                 }
             });
         });
         
-        // Add tooltip to copy icons
-        document.querySelectorAll('.copy-btn').forEach(btn => {
-            btn.addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
-        });
+        // Auto-expand first API on load
+        setTimeout(() => {
+            const firstApi = document.querySelector('.api-header');
+            if (firstApi) firstApi.click();
+        }, 500);
     </script>
 </body>
 </html>
