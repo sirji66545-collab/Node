@@ -3,284 +3,231 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📡 OSINT API Hub - Live Endpoints</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>API Endpoints - OSINT Hub</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
         body {
-            background: radial-gradient(circle at 20% 50%, #0a0f1e, #05080f);
-            font-family: 'Inter', sans-serif;
-            color: #e0e0e0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
-        
-        /* Liquid Glass Navbar */
-        .navbar {
-            background: rgba(10, 20, 30, 0.6);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid rgba(0, 255, 200, 0.3);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            position: sticky;
-            top: 0;
-            z-index: 100;
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
         }
-        
-        .logo {
-            font-size: 1.8rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, #00ffcc, #0099ff);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
         }
-        
-        .nav-links a {
-            color: #ccc;
-            text-decoration: none;
-            margin-left: 2rem;
-            transition: 0.3s;
-        }
-        
-        .nav-links a:hover { color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
-        
-        /* Hero Section */
-        .hero {
-            text-align: center;
-            padding: 3rem 2rem;
-            background: linear-gradient(135deg, rgba(0,255,200,0.05), rgba(0,100,255,0.05));
-        }
-        
-        .hero h1 {
-            font-size: 3rem;
-            background: linear-gradient(135deg, #fff, #00ffcc);
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
-        }
-        
-        .stats-grid {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin-top: 2rem;
-            flex-wrap: wrap;
-        }
-        
-        .stat-card {
-            background: rgba(0, 255, 200, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(0, 255, 200, 0.2);
-            border-radius: 20px;
-            padding: 1rem 2rem;
-            text-align: center;
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-            font-weight: 800;
-            color: #00ffcc;
-        }
-        
-        /* Endpoint Grid */
-        .container {
-            max-width: 1400px;
-            margin: 2rem auto;
-            padding: 0 2rem;
-        }
-        
-        .endpoint-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 1.5rem;
-            margin-top: 2rem;
-        }
-        
-        .endpoint-card {
-            background: rgba(15, 25, 35, 0.7);
-            backdrop-filter: blur(15px);
-            border: 1px solid rgba(0, 255, 200, 0.2);
-            border-radius: 24px;
-            padding: 1.5rem;
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-        
-        .endpoint-card:hover {
+        .card:hover {
             transform: translateY(-5px);
-            border-color: #00ffcc;
-            box-shadow: 0 10px 40px rgba(0, 255, 200, 0.2);
         }
-        
-        .endpoint-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1rem;
-            flex-wrap: wrap;
+        .api-card {
+            cursor: pointer;
+            border-left: 4px solid #667eea;
+            margin-bottom: 20px;
         }
-        
-        .endpoint-name {
-            font-size: 1.3rem;
-            font-weight: 700;
+        .api-card:hover {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
         }
-        
-        .status-badge {
-            padding: 0.25rem 0.75rem;
-            border-radius: 50px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        
-        .status-up { background: #00ff8844; color: #00ff88; border: 1px solid #00ff88; }
-        .status-down { background: #ff444444; color: #ff4444; border: 1px solid #ff4444; }
-        
         .endpoint-url {
-            background: #00000055;
-            padding: 0.5rem;
-            border-radius: 12px;
+            background: #f0f2f5;
+            padding: 10px;
+            border-radius: 8px;
             font-family: monospace;
-            font-size: 0.8rem;
-            margin: 0.75rem 0;
+            font-size: 14px;
             word-break: break-all;
         }
-        
-        .params {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.5rem;
-            margin: 0.75rem 0;
-        }
-        
-        .param {
-            background: #1a2a3a;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-family: monospace;
-        }
-        
-        .example {
-            background: #0a1a2a;
-            padding: 0.75rem;
-            border-radius: 12px;
-            font-size: 0.7rem;
-            font-family: monospace;
-            margin-top: 0.75rem;
-            overflow-x: auto;
-        }
-        
         .copy-btn {
-            background: rgba(0, 255, 200, 0.2);
-            border: 1px solid #00ffcc;
-            padding: 0.5rem 1rem;
-            border-radius: 30px;
-            color: #00ffcc;
             cursor: pointer;
-            margin-top: 0.75rem;
-            width: 100%;
-            transition: 0.3s;
+            transition: all 0.2s ease;
         }
-        
         .copy-btn:hover {
-            background: #00ffcc;
-            color: #000;
-            box-shadow: 0 0 15px #00ffcc;
+            transform: scale(1.1);
+            color: #28a745;
         }
-        
+        .toast-notify {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        .badge-api {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+        }
         .footer {
-            text-align: center;
-            padding: 2rem;
-            border-top: 1px solid rgba(0,255,200,0.2);
-            margin-top: 3rem;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 20px 0;
+            margin-top: 50px;
         }
-        
-        @media (max-width: 768px) {
-            .endpoint-grid { grid-template-columns: 1fr; }
-            .navbar { flex-direction: column; gap: 1rem; }
-            .nav-links a { margin: 0 1rem; }
+        .footer a {
+            color: #ffd700;
+            text-decoration: none;
+        }
+        .search-box {
+            margin-bottom: 30px;
+        }
+        .param-badge {
+            background: #e9ecef;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-family: monospace;
         }
     </style>
 </head>
 <body>
-    <nav class="navbar">
-        <div class="logo">🔐 OSINT API HUB</div>
-        <div class="nav-links">
-            <a href="/">Home</a>
-            <a href="/endpoints">📡 Endpoints</a>
-            <a href="/docs">📚 Docs</a>
-            <a href="/login">🔑 Admin</a>
+    <nav class="navbar navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-terminal"></i> OSINT API Hub
+            </a>
+            <div class="ms-auto">
+                <% if (user) { %>
+                    <a href="/admin/dashboard" class="btn btn-outline-light me-2">
+                        <i class="fas fa-tachometer-alt"></i> Dashboard
+                    </a>
+                    <a href="/logout" class="btn btn-outline-danger">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </a>
+                <% } else { %>
+                    <a href="/login" class="btn btn-outline-light">
+                        <i class="fas fa-lock"></i> Admin Login
+                    </a>
+                <% } %>
+            </div>
         </div>
     </nav>
-    
-    <div class="hero">
-        <h1>📡 Live API Endpoints</h1>
-        <p>All available OSINT APIs — test them live, copy examples, integrate instantly</p>
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-number"><%= apis.length %></div>
-                <div>Available APIs</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">24/7</div>
-                <div>Uptime</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-number">🔓</div>
-                <div>No Restrictions</div>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12 text-center">
+                <h1 class="text-white mb-2">
+                    <i class="fas fa-plug"></i> API Endpoints
+                </h1>
+                <p class="text-white-50 mb-4">Click on any API card to copy the endpoint URL</p>
+                
+                <div class="search-box">
+                    <input type="text" id="searchInput" class="form-control form-control-lg" placeholder="🔍 Search APIs..." style="max-width: 500px; margin: 0 auto; border-radius: 50px;">
+                </div>
             </div>
         </div>
-    </div>
-    
-    <div class="container">
-        <div class="endpoint-grid">
+
+        <div class="row" id="apisContainer">
             <% apis.forEach(api => { %>
-            <div class="endpoint-card" onclick="selectEndpoint('<%= api.name %>')">
-                <div class="endpoint-header">
-                    <span class="endpoint-name"><%= api.display_name %></span>
-                    <span class="status-badge <%= statusMap[api.name] === false ? 'status-down' : 'status-up' %>">
-                        <%= statusMap[api.name] === false ? '⚠️ Down' : '🟢 Live' %>
-                    </span>
+                <div class="col-md-6 col-lg-4 api-item" data-name="<%= api.display_name.toLowerCase() %>" data-endpoint="<%= api.endpoint %>">
+                    <div class="card api-card" onclick="copyToClipboard('<%= api.endpoint %>')">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <h5 class="card-title">
+                                    <%= api.display_name %>
+                                </h5>
+                                <i class="fas fa-copy copy-btn text-secondary" title="Click to copy URL"></i>
+                            </div>
+                            <div class="endpoint-url mt-2">
+                                <code><%= api.endpoint %></code>
+                            </div>
+                            <div class="mt-2">
+                                <span class="param-badge">
+                                    <i class="fas fa-code-branch"></i> param: <strong><%= api.param_name %></strong>
+                                </span>
+                                <span class="param-badge ms-2">
+                                    <i class="fas fa-chalkboard-user"></i> example: <%= api.param_example %>
+                                </span>
+                            </div>
+                            <p class="card-text mt-2 small text-muted">
+                                <%= api.description %>
+                            </p>
+                            <div class="mt-2">
+                                <code class="small bg-light p-1 rounded">
+                                    GET <%= api.endpoint %>?key=YOUR_API_KEY&<%= api.param_name %>=<%= api.param_example %>
+                                </code>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="endpoint-url">
-                    GET <span style="color:#00ffcc"><%= baseUrl %><%= api.endpoint %></span>
+            <% }) %>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                <div class="alert alert-info">
+                    <i class="fas fa-key"></i> <strong>Need an API key?</strong> 
+                    <a href="/login" class="alert-link">Login to admin panel</a> to generate your API key.
                 </div>
-                <div class="params">
-                    <% (api.required_params || '').split(',').forEach(p => { %>
-                        <span class="param"><%= p.trim() %></span>
-                    <% }) %>
-                </div>
-                <div class="example">
-                    📋 Example:<br>
-                    <code><%= baseUrl %><%= api.endpoint %>?key=YOUR_API_KEY&<%= Object.entries(JSON.parse(api.example_params || '{}')).map(([k,v]) => `${k}=${v}`).join('&') %></code>
-                </div>
-                <button class="copy-btn" onclick="event.stopPropagation(); copyToClipboard('<%= baseUrl %><%= api.endpoint %>?key=YOUR_API_KEY&<%= Object.entries(JSON.parse(api.example_params || '{}')).map(([k,v]) => `${k}=${v}`).join('&') %>')">
-                    📋 Copy Example URL
-                </button>
             </div>
-            <% }); %>
         </div>
     </div>
-    
-    <div class="footer">
-        <p>🔐 Need an API key? Contact <strong>@BMW_AURA4</strong> or <strong>@BMW_AURA1</strong></p>
-        <p>📢 Join our channel: <a href="https://t.me/OSINTERA_1" style="color:#00ffcc">https://t.me/OSINTERA_1</a></p>
-        <p>© OSINT API Hub | All endpoints return owner info automatically</p>
+
+    <!-- Toast Notification -->
+    <div class="toast-notify">
+        <div id="copyToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="2000">
+            <div class="d-flex">
+                <div class="toast-body">
+                    <i class="fas fa-check-circle"></i> Copied to clipboard!
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
     </div>
-    
+
+    <footer class="footer">
+        <div class="container text-center">
+            <p>
+                <i class="fab fa-telegram"></i> Owner: <%= owner %> | 
+                <i class="fas fa-link"></i> Channel: <%= channel %>
+            </p>
+            <p class="small mb-0">&copy; 2024 OSINT API Hub | All APIs for educational purposes only</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function copyToClipboard(text) {
-            navigator.clipboard.writeText(text);
-            alert('✅ URL copied to clipboard!');
+        // Copy to clipboard function
+        function copyToClipboard(endpoint) {
+            const fullUrl = window.location.origin + endpoint;
+            navigator.clipboard.writeText(fullUrl).then(function() {
+                // Show toast notification
+                const toast = new bootstrap.Toast(document.getElementById('copyToast'));
+                toast.show();
+                
+                // Visual feedback on clicked card
+                event.currentTarget.style.opacity = '0.8';
+                setTimeout(() => {
+                    event.currentTarget.style.opacity = '1';
+                }, 200);
+            }).catch(function(err) {
+                console.error('Could not copy: ', err);
+                alert('Press Ctrl+C to copy: ' + fullUrl);
+            });
         }
         
-        function selectEndpoint(name) {
-            console.log('Selected:', name);
-        }
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('keyup', function() {
+            const searchValue = this.value.toLowerCase();
+            const items = document.querySelectorAll('.api-item');
+            
+            items.forEach(item => {
+                const name = item.getAttribute('data-name');
+                const endpoint = item.getAttribute('data-endpoint');
+                
+                if (name.includes(searchValue) || endpoint.includes(searchValue)) {
+                    item.style.display = '';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+        
+        // Add tooltip to copy icons
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
+        });
     </script>
 </body>
 </html>
