@@ -170,7 +170,7 @@
             <div class="stats">
                 <div class="stat">
                     <div class="stat-label"><i class="fas fa-bolt"></i> Total API Hits</div>
-                    <div class="stat-val"><%= totalHits.toLocaleString() %></div>
+                    <div class="stat-val"><%= (totalHits ?? 0).toLocaleString() %></div>
                     <div class="stat-sub">All-time requests</div>
                 </div>
                 <div class="stat">
