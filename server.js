@@ -183,7 +183,7 @@ function requireHeadAdmin(req, res, next) {
 
 const apiProxyMap = {
     'vehicle-info': (p) => `http://104.248.231.22:5000/challan/${p.vehicle || p.q || p.term}`,
-    'telegram-num': (p) => `http://api.subhxcosmo.in/api?key=${MASTER_KEYS.subhxco}&type=tg&term=${p.term || p.id || p.number}`,
+    'telegram-num': (p) => `https://telegram-to-num-gray.vercel.app/sms?key=PRIME&term=${p.term || p.id || p.username}`,
     'family-info': (p) => `https://ayush-multi-apiv2.onrender.com/adhar?q=${p.q || p.term || p.id}`,
     'number-info': (p) => `https://believes-shore-funny-void.trycloudflare.com/search?q=${p.q || p.number || p.num}`,
     'aadhar-info': (p) => `https://believes-shore-funny-void.trycloudflare.com/search?q=${p.q || p.num || p.aadhar}`,
@@ -207,7 +207,7 @@ const apiProxyMap = {
     'insta': (p) => `https://ft-osint-api.duckdns.org/api/insta?key=${MASTER_KEYS.ftosint}&username=${p.username}`,
     'num-fullinfo': (p) => `https://say-wallahai-bro-say-wallahi.onrender.com/raavan/v34/query=${p.number}/key=${MASTER_KEYS.truecallerLeak}`,
     'mistral': `mistral-direct`,
-    'veh-to-num': (p) => `https://surya-veh-num-xmrewqs.ramaxinfo.workers.dev/?term=${p.term || p.vehicle || p.num}`
+    'veh-to-num': (p) => `https://vehicleinfo.noobgamingv40.workers.dev/fetch?vehicle=${p.vehicle || p.term}`
 };
 
 function cleanResponseData(data) {
