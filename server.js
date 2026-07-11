@@ -11,12 +11,12 @@ const cron = require('node-cron');
 const fs = require('fs');
 const app = express();
 
-const OWNER = '@Max_aura_need';
+const OWNER = '@sahilxalone';
 const CHANNEL = '@OSINTNXERA';
 
 const MASTER_KEYS = {
     subhxco: 'RACKSUN',
-    ftosint: 'nxsahilx928x926',
+    ftosint: 'sahil-new',
     ayaanmods: 'annonymousai',
     truecallerLeak: 'RATELIMITE-BEIBBkim7bjTAkJIZTIUGPR4FkfNAYoj',
     mistral: 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
