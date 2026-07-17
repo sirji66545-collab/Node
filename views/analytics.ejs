@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analytics - OSINT Hub</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/dark-theme.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+</head>
+<body>
+    <%- include('partials/sidebar', { currentPage: 'analytics' }) %>
+    <div class="main-content">
+        <%- include('partials/topbar', { pageTitle: '📈 Analytics' }) %>
+        <div class="content">
+            <div class="analytics-grid">
+                <div class="card">
+                    <h3>Total API Calls</h3>
+                    <p class="stat-number"><%= analytics ? analytics.length : 0 %></p>
+                </div>
+                <div class="card">
+                    <h3>Active Users</h3>
+                    <p class="stat-number">0</p>
+                </div>
+                <div class="card">
+                    <h3>Today's Calls</h3>
+                    <p class="stat-number">0</p>
+                </div>
+            </div>
+            <div class="card">
+                <h3>API Usage by Endpoint</h3>
+                <table>
+                    <thead>
+                        <tr><th>Endpoint</th><th>Calls</th><th>Last 30 Days</th></tr>
+                    </thead>
+                    <tbody>
+                        <% if (analytics && analytics.length > 0) { %>
+                            <% analytics.forEach(item => { %>
+                                <tr>
+                                    <td><%= item.endpoint %></td>
+                                    <td><%= item.count %></td>
+                                    <td><%= item.day %></td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="3">No data available</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <script src="/js/main.js"></script>
+    <script src="/js/theme.js"></script>
+</body>
+</html>
