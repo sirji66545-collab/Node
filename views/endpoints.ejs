@@ -236,7 +236,39 @@
     </div>
 
     <div id="apisContainer">
-        <% apis.forEach((api, index) => { %>
+        <% apis.forEach((api, index) => { 
+            // Determine correct parameter name for each API
+            let displayParam = api.param_name;
+            const paramMap = {
+                'aadhar-info': 'q',
+                'number-info': 'q',
+                'family-info': 'q',
+                'num-newinfo': 'num',
+                'email-info': 'q',
+                'telegram-num': 'term',
+                'vehicle-info': 'vehicle',
+                'num-india': 'num',
+                'num-pak': 'number',
+                'name-details': 'name',
+                'bank': 'ifsc',
+                'pan': 'pan',
+                'rc': 'owner',
+                'ip': 'ip',
+                'pincode': 'pin',
+                'git': 'username',
+                'bgmi': 'uid',
+                'ff': 'uid',
+                'insta': 'username',
+                'family': 'term',
+                'veh-to-num': 'vehicle',
+                'ai-image': 'prompt',
+                'num-fullinfo': 'number',
+                'mistral': 'message'
+            };
+            if (paramMap[api.name]) {
+                displayParam = paramMap[api.name];
+            }
+        %>
         <div class="api-item"
              data-name="<%= api.display_name.toLowerCase() %>"
              data-endpoint="<%= api.endpoint.toLowerCase() %>"
@@ -264,19 +296,21 @@
                 <div class="api-body" id="body-<%= api.id %>">
                     <div class="url-bar">
                         <span class="method">GET</span>
-                        <span><%= baseUrl %><%= api.endpoint %>?key=YOUR_KEY&<%= api.param_name %>=<%= api.param_example %></span>
+                        <span id="urlDisplay-<%= api.id %>">
+                            <%= baseUrl %><%= api.endpoint %>?key=YOUR_KEY&<%= displayParam %>=<%= api.param_example %>
+                        </span>
                     </div>
                     <div class="field-label">API Key</div>
                     <div class="input-group-custom">
                         <input type="text" class="param-input" id="apiKey-<%= api.id %>" placeholder="Your API key...">
                         <button class="copy-btn" onclick="copyInput('apiKey-<%= api.id %>', this)"><i class="fas fa-copy"></i></button>
                     </div>
-                    <div class="field-label"><%= api.param_name.toUpperCase() %></div>
+                    <div class="field-label"><%= displayParam.toUpperCase() %></div>
                     <div class="input-group-custom">
                         <input type="text" class="param-input" id="param-<%= api.id %>" placeholder="<%= api.param_example %>" value="<%= api.param_example %>">
                         <button class="copy-btn" onclick="copyInput('param-<%= api.id %>', this)"><i class="fas fa-copy"></i></button>
                     </div>
-                    <button class="test-btn" id="btn-<%= api.id %>" onclick="testAPI('<%= api.id %>', '<%= api.endpoint %>', '<%= api.param_name %>')">
+                    <button class="test-btn" id="btn-<%= api.id %>" onclick="testAPI('<%= api.id %>', '<%= api.endpoint %>', '<%= api.param_name %>', '<%= api.name %>')">
                         <span><i class="fas fa-play me-2"></i>Send Request</span>
                     </button>
                     <div class="response-area" id="response-<%= api.id %>">
@@ -309,6 +343,7 @@
     function toggleCard(id) {
         document.getElementById(`card-${id}`).classList.toggle('open');
     }
+    
     function copyInput(elementId, btn) {
         const el = document.getElementById(elementId);
         if (!el.value) return;
@@ -318,8 +353,10 @@
             setTimeout(() => btn.innerHTML = orig, 1200);
         });
     }
+    
     function copyResponse(apiId) {
         const text = document.getElementById(`response-content-${apiId}`).textContent;
+        if (!text) return;
         navigator.clipboard.writeText(text).then(() => {
             const btn = event.target.closest('.copy-btn');
             const orig = btn.innerHTML;
@@ -327,40 +364,120 @@
             setTimeout(() => btn.innerHTML = orig, 1200);
         });
     }
-    async function testAPI(apiId, endpoint, paramName) {
+    
+    async function testAPI(apiId, endpoint, paramName, apiName) {
         const apiKey = document.getElementById(`apiKey-${apiId}`).value.trim();
         const paramValue = document.getElementById(`param-${apiId}`).value.trim();
         const btn = document.getElementById(`btn-${apiId}`);
-        if (!apiKey) { showResponse(apiId, { error: 'API key required' }, 'err', '400'); return; }
-        if (!paramValue) { showResponse(apiId, { error: `${paramName} is required` }, 'err', '400'); return; }
+        
+        if (!apiKey) { 
+            showResponse(apiId, { error: 'API key required' }, 'err', '400'); 
+            return; 
+        }
+        if (!paramValue) { 
+            showResponse(apiId, { error: `Parameter is required` }, 'err', '400'); 
+            return; 
+        }
+        
         btn.classList.add('loading');
         btn.querySelector('span').innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sending...';
         document.getElementById(`response-${apiId}`).style.display = 'none';
+        
         try {
-            const url = `${window.location.origin}${endpoint}?key=${encodeURIComponent(apiKey)}&${encodeURIComponent(paramName)}=${encodeURIComponent(paramValue)}`;
+            // Parameter mapping for each API endpoint
+            const paramMap = {
+                'aadhar-info': 'q',
+                'number-info': 'q',
+                'family-info': 'q',
+                'num-newinfo': 'num',
+                'email-info': 'q',
+                'telegram-num': 'term',
+                'vehicle-info': 'vehicle',
+                'num-india': 'num',
+                'num-pak': 'number',
+                'name-details': 'name',
+                'bank': 'ifsc',
+                'pan': 'pan',
+                'rc': 'owner',
+                'ip': 'ip',
+                'pincode': 'pin',
+                'git': 'username',
+                'bgmi': 'uid',
+                'ff': 'uid',
+                'insta': 'username',
+                'family': 'term',
+                'veh-to-num': 'vehicle',
+                'ai-image': 'prompt',
+                'num-fullinfo': 'number',
+                'mistral': 'message'
+            };
+            
+            // Use mapped param name or fallback to the one from database
+            let actualParamName = paramMap[apiName] || paramName;
+            
+            // Build the URL
+            const url = `${window.location.origin}${endpoint}?key=${encodeURIComponent(apiKey)}&${encodeURIComponent(actualParamName)}=${encodeURIComponent(paramValue)}`;
+            console.log('🔍 Request URL:', url);
+            console.log('📝 Using param:', actualParamName, 'with value:', paramValue);
+            
             const start = Date.now();
             const response = await fetch(url);
             const elapsed = Date.now() - start;
-            const data = await response.json();
+            
+            let data;
+            const contentType = response.headers.get('content-type');
+            
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                const text = await response.text();
+                data = { 
+                    error: 'Server returned non-JSON response',
+                    details: 'Check if the API endpoint is correct',
+                    status: response.status,
+                    preview: text.substring(0, 200)
+                };
+            }
+            
             showResponse(apiId, data, response.ok ? 'ok' : 'err', `${response.status} · ${elapsed}ms`);
         } catch (error) {
-            showResponse(apiId, { error: error.message }, 'err', 'Error');
+            showResponse(apiId, { 
+                error: 'Request failed', 
+                message: error.message 
+            }, 'err', 'Error');
         } finally {
             btn.classList.remove('loading');
             btn.querySelector('span').innerHTML = '<i class="fas fa-play me-2"></i>Send Request';
         }
     }
+    
     function showResponse(apiId, data, type, statusText) {
         const div = document.getElementById(`response-${apiId}`);
-        document.getElementById(`response-content-${apiId}`).textContent = JSON.stringify(data, null, 2);
+        const content = document.getElementById(`response-content-${apiId}`);
+        
+        // Format JSON nicely
+        try {
+            if (typeof data === 'object') {
+                content.textContent = JSON.stringify(data, null, 2);
+            } else {
+                content.textContent = data;
+            }
+        } catch (e) {
+            content.textContent = String(data);
+        }
+        
         const s = document.getElementById(`status-${apiId}`);
-        s.textContent = statusText;
+        s.textContent = statusText || (type === 'ok' ? '200 OK' : 'Error');
         s.className = `response-status ${type}`;
         div.style.display = 'block';
     }
+    
+    // Search functionality
     document.getElementById('searchInput').addEventListener('input', function() {
         filterCards(this.value.toLowerCase(), document.querySelector('.filter-tab.active')?.dataset.filter || 'all');
     });
+    
+    // Filter tabs
     document.querySelectorAll('.filter-tab').forEach(tab => {
         tab.addEventListener('click', function() {
             document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
@@ -368,28 +485,43 @@
             filterCards(document.getElementById('searchInput').value.toLowerCase(), this.dataset.filter);
         });
     });
+    
     function filterCards(query, category) {
         let visible = 0;
         document.querySelectorAll('.api-item').forEach(item => {
-            const show = (!query || item.dataset.name.includes(query) || item.dataset.endpoint.includes(query)) &&
-                         (category === 'all' || item.dataset.category === category);
+            const name = item.dataset.name || '';
+            const endpoint = item.dataset.endpoint || '';
+            const itemCategory = item.dataset.category || 'other';
+            
+            const matchesSearch = !query || name.includes(query) || endpoint.includes(query);
+            const matchesCategory = category === 'all' || itemCategory === category;
+            
+            const show = matchesSearch && matchesCategory;
             item.style.display = show ? '' : 'none';
             if (show) visible++;
         });
-        const ex = document.getElementById('emptyState');
-        if (ex) ex.remove();
+        
+        // Show/hide empty state
+        const existingEmpty = document.getElementById('emptyState');
+        if (existingEmpty) existingEmpty.remove();
+        
         if (visible === 0) {
-            const e = document.createElement('div');
-            e.id = 'emptyState';
-            e.className = 'empty-state';
-            e.innerHTML = '<i class="fas fa-search-minus"></i><p>No endpoints found</p>';
-            document.getElementById('apisContainer').appendChild(e);
+            const empty = document.createElement('div');
+            empty.id = 'emptyState';
+            empty.className = 'empty-state';
+            empty.innerHTML = '<i class="fas fa-search-minus"></i><p>No endpoints found matching your criteria</p>';
+            document.getElementById('apisContainer').appendChild(empty);
         }
     }
+    
+    // Auto-open first card on load
     setTimeout(() => {
-        const first = document.querySelector('.api-card');
-        if (first) toggleCard(first.id.replace('card-', ''));
-    }, 400);
+        const firstCard = document.querySelector('.api-card');
+        if (firstCard) {
+            const id = firstCard.id.replace('card-', '');
+            toggleCard(id);
+        }
+    }, 500);
 </script>
 </body>
 </html>
