@@ -217,25 +217,39 @@ function cleanResponseData(data) {
     let cleaned = JSON.parse(JSON.stringify(data));
     
     const removeFields = [
-        'Developer', 'DM TO BUY ACCESS', 'owner', 'xtradeep', 'Kon_Hu_Mai', 
-        'channel', 'telegram', 'contact', 'instagram', 'twitter', 'fb', 
-        'facebook', 'website', 'github', 'created_by', 'owner_username', 
-        'owner_channel', 'credit', 'Credits', 'Credit', 'Source', 'source', 
-        'provider', 'Provider', 'api_source', 'API_Source',
-        'invalidayushh', 'ftgamerv2', 'ftgamer2', '@invalidayushh', 
-        '@ftgamerv2', '@ftgamer2'
+        // Owner/Channel fields
+        'owner', 'OWNER', 'channel', 'CHANNEL',
+        'telegram', 'contact', 'instagram', 'twitter', 'fb', 'facebook',
+        'website', 'github', 'created_by', 'createdBy', 'owner_username', 'owner_channel',
+        
+        // Credit/Source fields
+        'credit', 'Credits', 'Credit', 'Source', 'source', 'provider', 'Provider',
+        'api_source', 'API_Source', 'developer', 'Developer', 'dev', 'Dev',
+        
+        // Developer names to remove
+        'invalidayushh', 'ftgamerv2', 'ftgamer2', 
+        '@invalidayushh', '@ftgamerv2', '@ftgamer2',
+        'InvalidAyush', '@InvalidAyush', 'invalidayush', '@invalidayush',
+        
+        // Common spam fields
+        'DM TO BUY ACCESS', 'xtradeep', 'Kon_Hu_Mai',
+        'support', 'Support', 'help', 'Help'
     ];
     
     function cleanObject(obj) {
         if (!obj || typeof obj !== 'object') return;
         for (let key in obj) {
-            if (removeFields.includes(key.toLowerCase()) || removeFields.includes(key)) {
+            // Remove by key name
+            if (removeFields.includes(key) || removeFields.includes(key.toLowerCase())) {
                 delete obj[key];
-            } else if (typeof obj[key] === 'string') {
-                if (obj[key].includes('invalidayushh') || 
+            } 
+            // Remove by value containing developer names
+            else if (typeof obj[key] === 'string') {
+                if (obj[key].includes('InvalidAyush') || 
+                    obj[key].includes('@InvalidAyush') ||
+                    obj[key].includes('invalidayush') ||
                     obj[key].includes('ftgamerv2') || 
                     obj[key].includes('ftgamer2') ||
-                    obj[key].includes('@invalidayushh') || 
                     obj[key].includes('@ftgamerv2') || 
                     obj[key].includes('@ftgamer2')) {
                     delete obj[key];
@@ -246,6 +260,8 @@ function cleanResponseData(data) {
         }
     }
     cleanObject(cleaned);
+    
+    // Add YOUR owner info
     cleaned.owner = OWNER;
     cleaned.channel = CHANNEL;
     return cleaned;
