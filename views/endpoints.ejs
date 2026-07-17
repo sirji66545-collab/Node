@@ -237,32 +237,42 @@
 
     <div id="apisContainer">
         <% apis.forEach((api, index) => { 
-            // Determine correct parameter name for each API
+            // ========== COMPLETE PARAMETER MAPPING ==========
             let displayParam = api.param_name;
             const paramMap = {
+                // Number APIs
                 'aadhar-info': 'q',
                 'number-info': 'q',
                 'family-info': 'q',
-                'num-newinfo': 'num',
+                'num-newinfo': 'q',
                 'email-info': 'q',
-                'telegram-num': 'term',
-                'vehicle-info': 'vehicle',
                 'num-india': 'num',
                 'num-pak': 'number',
-                'name-details': 'name',
-                'bank': 'ifsc',
-                'pan': 'pan',
+                'num-fullinfo': 'number',
+                
+                // Vehicle APIs
+                'vehicle-info': 'vehicle',
+                'vehicle': 'q',
+                'veh-to-num': 'term',
                 'rc': 'owner',
-                'ip': 'ip',
-                'pincode': 'pin',
+                
+                // Social APIs
+                'telegram-num': 'term',
+                'insta': 'username',
                 'git': 'username',
                 'bgmi': 'uid',
                 'ff': 'uid',
-                'insta': 'username',
                 'family': 'term',
-                'veh-to-num': 'vehicle',
+                
+                // Info APIs
+                'name-details': 'name',
+                'bank': 'ifsc',
+                'pan': 'pan',
+                'ip': 'ip',
+                'pincode': 'pin',
+                
+                // AI APIs
                 'ai-image': 'prompt',
-                'num-fullinfo': 'number',
                 'mistral': 'message'
             };
             if (paramMap[api.name]) {
@@ -375,7 +385,7 @@
             return; 
         }
         if (!paramValue) { 
-            showResponse(apiId, { error: `Parameter is required` }, 'err', '400'); 
+            showResponse(apiId, { error: 'Parameter is required' }, 'err', '400'); 
             return; 
         }
         
@@ -384,41 +394,50 @@
         document.getElementById(`response-${apiId}`).style.display = 'none';
         
         try {
-            // Parameter mapping for each API endpoint
+            // ========== COMPLETE PARAMETER MAPPING ==========
             const paramMap = {
+                // Number APIs
                 'aadhar-info': 'q',
                 'number-info': 'q',
                 'family-info': 'q',
-                'num-newinfo': 'num',
+                'num-newinfo': 'q',
                 'email-info': 'q',
-                'telegram-num': 'term',
-                'vehicle-info': 'vehicle',
                 'num-india': 'num',
                 'num-pak': 'number',
-                'name-details': 'name',
-                'bank': 'ifsc',
-                'pan': 'pan',
+                'num-fullinfo': 'number',
+                
+                // Vehicle APIs
+                'vehicle-info': 'vehicle',
+                'vehicle': 'q',
+                'veh-to-num': 'term',
                 'rc': 'owner',
-                'ip': 'ip',
-                'pincode': 'pin',
+                
+                // Social APIs
+                'telegram-num': 'term',
+                'insta': 'username',
                 'git': 'username',
                 'bgmi': 'uid',
                 'ff': 'uid',
-                'insta': 'username',
                 'family': 'term',
-                'veh-to-num': 'vehicle',
+                
+                // Info APIs
+                'name-details': 'name',
+                'bank': 'ifsc',
+                'pan': 'pan',
+                'ip': 'ip',
+                'pincode': 'pin',
+                
+                // AI APIs
                 'ai-image': 'prompt',
-                'num-fullinfo': 'number',
                 'mistral': 'message'
             };
             
-            // Use mapped param name or fallback to the one from database
             let actualParamName = paramMap[apiName] || paramName;
             
-            // Build the URL
             const url = `${window.location.origin}${endpoint}?key=${encodeURIComponent(apiKey)}&${encodeURIComponent(actualParamName)}=${encodeURIComponent(paramValue)}`;
-            console.log('🔍 Request URL:', url);
-            console.log('📝 Using param:', actualParamName, 'with value:', paramValue);
+            console.log('🔍 API:', apiName);
+            console.log('🔍 URL:', url);
+            console.log('🔍 Param:', actualParamName, '=', paramValue);
             
             const start = Date.now();
             const response = await fetch(url);
@@ -433,7 +452,6 @@
                 const text = await response.text();
                 data = { 
                     error: 'Server returned non-JSON response',
-                    details: 'Check if the API endpoint is correct',
                     status: response.status,
                     preview: text.substring(0, 200)
                 };
@@ -455,7 +473,6 @@
         const div = document.getElementById(`response-${apiId}`);
         const content = document.getElementById(`response-content-${apiId}`);
         
-        // Format JSON nicely
         try {
             if (typeof data === 'object') {
                 content.textContent = JSON.stringify(data, null, 2);
@@ -501,7 +518,6 @@
             if (show) visible++;
         });
         
-        // Show/hide empty state
         const existingEmpty = document.getElementById('emptyState');
         if (existingEmpty) existingEmpty.remove();
         
