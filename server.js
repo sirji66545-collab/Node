@@ -15,12 +15,8 @@ const OWNER = '@sahilxalone';
 const CHANNEL = '@OSINTNXERA';
 
 const MASTER_KEYS = {
-    subhxco: 'RACKSUN',
     ftosint: 'sahil-new',
-    ayaanmods: 'annonymousai',
-    truecallerLeak: 'RATELIMITE-BEIBBkim7bjTAkJIZTIUGPR4FkfNAYoj',
-    mistral: 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q',
-    rogers: 'Rogers2'
+    mistral: 'FVKec5Xqa2ORzSoBrqi21nRbIM6rFk2q'
 };
 
 const dataDir = path.join(__dirname, 'data');
