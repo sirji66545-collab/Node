@@ -101,7 +101,7 @@ db.serialize(() => {
     db.get(`SELECT * FROM users WHERE username = 'superadmin'`, [], (err, row) => {
         if (!row) {
             db.run(`INSERT INTO users (username, password, role, created_by) VALUES (?, ?, ?, ?)`, 
-                ['superadmin', bcrypt.hashSync('aura@1234', 10), 'admin', 'main']);
+                ['sahil', bcrypt.hashSync('sexy', 10), 'admin', 'main']);
         }
     });
 
