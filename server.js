@@ -61,51 +61,66 @@ const DB = {
     next_id: 1
 };
 
-// Initialize default data
-(async () => {
-    const sahilHash = await bcrypt.hash('sahil', 10);
-    const superadminHash = await bcrypt.hash('sexy', 10);
-    
-    DB.users.push({
-        id: DB.next_id++,
-        username: 'sahil',
-        password: sahilHash,
-        role: 'head_admin',
-        created_at: new Date().toISOString()
-    });
-    
-    DB.users.push({
-        id: DB.next_id++,
-        username: 'superadmin',
-        password: superadminHash,
-        role: 'admin',
-        created_at: new Date().toISOString()
-    });
-    
-    DB.available_apis = [
-        { id: DB.next_id++, name: 'vehicle-info', display_name: 'Vehicle Info', endpoint: '/api/vehicle-info', required_params: '{"vehicle":"number"}', is_active: 1 },
-        { id: DB.next_id++, name: 'telegram-num', display_name: 'Telegram to Number', endpoint: '/api/telegram-num', required_params: '{"term":"username"}', is_active: 1 },
-        { id: DB.next_id++, name: 'family-info', display_name: 'Family Info', endpoint: '/api/family-info', required_params: '{"q":"name"}', is_active: 1 },
-        { id: DB.next_id++, name: 'number-info', display_name: 'Number Info', endpoint: '/api/number-info', required_params: '{"q":"number"}', is_active: 1 },
-        { id: DB.next_id++, name: 'email-info', display_name: 'Email Info', endpoint: '/api/email-info', required_params: '{"q":"email"}', is_active: 1 },
-        { id: DB.next_id++, name: 'insta', display_name: 'Instagram Info', endpoint: '/api/insta', required_params: '{"username":"username"}', is_active: 1 },
-        { id: DB.next_id++, name: 'vehicle', display_name: 'Vehicle Info', endpoint: '/api/vehicle', required_params: '{"vehicle":"number"}', is_active: 1 },
-        { id: DB.next_id++, name: 'num-india', display_name: 'India Number', endpoint: '/api/num-india', required_params: '{"num":"number"}', is_active: 1 },
-        { id: DB.next_id++, name: 'num-pak', display_name: 'Pakistan Number', endpoint: '/api/num-pak', required_params: '{"number":"number"}', is_active: 1 },
-        { id: DB.next_id++, name: 'name-details', display_name: 'Name Details', endpoint: '/api/name-details', required_params: '{"name":"name"}', is_active: 1 },
-        { id: DB.next_id++, name: 'bank', display_name: 'Bank Info', endpoint: '/api/bank', required_params: '{"ifsc":"code"}', is_active: 1 },
-        { id: DB.next_id++, name: 'pan', display_name: 'PAN Info', endpoint: '/api/pan', required_params: '{"pan":"number"}', is_active: 1 },
-        { id: DB.next_id++, name: 'rc', display_name: 'RC Info', endpoint: '/api/rc', required_params: '{"owner":"name"}', is_active: 1 },
-        { id: DB.next_id++, name: 'ip', display_name: 'IP Info', endpoint: '/api/ip', required_params: '{"ip":"address"}', is_active: 1 },
-        { id: DB.next_id++, name: 'pincode', display_name: 'Pincode Info', endpoint: '/api/pincode', required_params: '{"pin":"code"}', is_active: 1 },
-        { id: DB.next_id++, name: 'git', display_name: 'GitHub Info', endpoint: '/api/git', required_params: '{"username":"username"}', is_active: 1 },
-        { id: DB.next_id++, name: 'bgmi', display_name: 'BGMI Info', endpoint: '/api/bgmi', required_params: '{"uid":"id"}', is_active: 1 },
-        { id: DB.next_id++, name: 'ff', display_name: 'FreeFire Info', endpoint: '/api/ff', required_params: '{"uid":"id"}', is_active: 1 },
-        { id: DB.next_id++, name: 'aadhar', display_name: 'Aadhar Info', endpoint: '/api/aadhar', required_params: '{"num":"number"}', is_active: 1 },
-        { id: DB.next_id++, name: 'mistral', display_name: 'Mistral AI', endpoint: '/api/mistral', required_params: '{"message":"text"}', is_active: 1 }
-    ];
-    
-    console.log('✅ Database initialized with default data');
+// Initialize database
+(async function initDB() {
+    try {
+        // Create users
+        const sahilHash = await bcrypt.hash('sahil', 10);
+        const superadminHash = await bcrypt.hash('sexy', 10);
+        
+        DB.users.push({
+            id: DB.next_id++,
+            username: 'sahil',
+            password: sahilHash,
+            role: 'head_admin',
+            created_at: new Date().toISOString()
+        });
+        
+        DB.users.push({
+            id: DB.next_id++,
+            username: 'superadmin',
+            password: superadminHash,
+            role: 'admin',
+            created_at: new Date().toISOString()
+        });
+        
+        // Create default APIs
+        const defaultApis = [
+            { name: 'vehicle-info', display_name: 'Vehicle Info', endpoint: '/api/vehicle-info', required_params: '{"vehicle":"number"}' },
+            { name: 'telegram-num', display_name: 'Telegram to Number', endpoint: '/api/telegram-num', required_params: '{"term":"username"}' },
+            { name: 'family-info', display_name: 'Family Info', endpoint: '/api/family-info', required_params: '{"q":"name"}' },
+            { name: 'number-info', display_name: 'Number Info', endpoint: '/api/number-info', required_params: '{"q":"number"}' },
+            { name: 'email-info', display_name: 'Email Info', endpoint: '/api/email-info', required_params: '{"q":"email"}' },
+            { name: 'insta', display_name: 'Instagram Info', endpoint: '/api/insta', required_params: '{"username":"username"}' },
+            { name: 'vehicle', display_name: 'Vehicle Info', endpoint: '/api/vehicle', required_params: '{"vehicle":"number"}' },
+            { name: 'num-india', display_name: 'India Number', endpoint: '/api/num-india', required_params: '{"num":"number"}' },
+            { name: 'num-pak', display_name: 'Pakistan Number', endpoint: '/api/num-pak', required_params: '{"number":"number"}' },
+            { name: 'name-details', display_name: 'Name Details', endpoint: '/api/name-details', required_params: '{"name":"name"}' },
+            { name: 'bank', display_name: 'Bank Info', endpoint: '/api/bank', required_params: '{"ifsc":"code"}' },
+            { name: 'pan', display_name: 'PAN Info', endpoint: '/api/pan', required_params: '{"pan":"number"}' },
+            { name: 'rc', display_name: 'RC Info', endpoint: '/api/rc', required_params: '{"owner":"name"}' },
+            { name: 'ip', display_name: 'IP Info', endpoint: '/api/ip', required_params: '{"ip":"address"}' },
+            { name: 'pincode', display_name: 'Pincode Info', endpoint: '/api/pincode', required_params: '{"pin":"code"}' },
+            { name: 'git', display_name: 'GitHub Info', endpoint: '/api/git', required_params: '{"username":"username"}' },
+            { name: 'bgmi', display_name: 'BGMI Info', endpoint: '/api/bgmi', required_params: '{"uid":"id"}' },
+            { name: 'ff', display_name: 'FreeFire Info', endpoint: '/api/ff', required_params: '{"uid":"id"}' },
+            { name: 'aadhar', display_name: 'Aadhar Info', endpoint: '/api/aadhar', required_params: '{"num":"number"}' },
+            { name: 'mistral', display_name: 'Mistral AI', endpoint: '/api/mistral', required_params: '{"message":"text"}' }
+        ];
+        
+        defaultApis.forEach(api => {
+            DB.available_apis.push({
+                id: DB.next_id++,
+                ...api,
+                is_active: 1,
+                created_at: new Date().toISOString()
+            });
+        });
+        
+        console.log('✅ Database initialized');
+    } catch (error) {
+        console.error('Database init error:', error);
+    }
 })();
 
 // ============ API PROXY MAP ============
@@ -180,7 +195,7 @@ function cleanResponseData(data) {
 
 // ============ ROUTES ============
 
-app.get('/', async (req, res) => {
+app.get('/', (req, res) => {
     try {
         const apis = DB.available_apis;
         const keys = DB.api_keys;
@@ -208,7 +223,7 @@ app.get('/', async (req, res) => {
     }
 });
 
-app.get('/endpoints', async (req, res) => {
+app.get('/endpoints', (req, res) => {
     try {
         const apis = DB.available_apis.filter(a => a.is_active === 1);
         
@@ -240,7 +255,7 @@ app.get('/endpoints', async (req, res) => {
     }
 });
 
-app.get('/docs', async (req, res) => {
+app.get('/docs', (req, res) => {
     try {
         const apis = DB.available_apis.filter(a => a.is_active === 1);
         
@@ -295,7 +310,7 @@ app.get('/logout', (req, res) => {
     res.redirect('/'); 
 });
 
-app.get('/head-admin/dashboard', requireHeadAdmin, async (req, res) => {
+app.get('/head-admin/dashboard', requireHeadAdmin, (req, res) => {
     try {
         const users = DB.users.filter(u => u.role !== 'head_admin');
         const keys = DB.api_keys.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -319,7 +334,7 @@ app.get('/head-admin/dashboard', requireHeadAdmin, async (req, res) => {
     }
 });
 
-app.get('/admin/dashboard', requireAuth, async (req, res) => {
+app.get('/admin/dashboard', requireAuth, (req, res) => {
     if (req.session.user.role === 'head_admin') {
         return res.redirect('/head-admin/dashboard');
     }
@@ -366,84 +381,89 @@ app.get('/admin/dashboard', requireAuth, async (req, res) => {
 
 // ============ GENERATE KEY ============
 app.post('/admin/generate-key', requireAuth, async (req, res) => {
-    const { name, expiry, unlimited_hits, allowed_apis, custom_key, 
-            rate_limit_enabled, rate_limit_per_day, rate_limit_per_hour, rate_limit_per_minute } = req.body;
-    
-    const isCustomEnabled = req.body.enable_custom === 'on' || req.body.enable_custom === true;
-    
-    if (isCustomEnabled && (!custom_key || custom_key.trim() === '')) {
-        return res.status(400).send('❌ Please enter a custom key or disable custom key option');
-    }
-    
-    function createKey(apiKey, isCustom) {
-        let expires_at = null;
-        const now = new Date();
-        if (expiry === '7d') expires_at = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
-        else if (expiry === '15d') expires_at = new Date(now.getTime() + (15 * 24 * 60 * 60 * 1000));
-        else if (expiry === '1m') expires_at = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
-        else if (expiry === '1y') expires_at = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000));
+    try {
+        const { name, expiry, unlimited_hits, allowed_apis, custom_key, 
+                rate_limit_enabled, rate_limit_per_day, rate_limit_per_hour, rate_limit_per_minute } = req.body;
         
-        let allowedApisJson = '["all"]';
-        if (allowed_apis) {
-            if (Array.isArray(allowed_apis)) {
-                allowedApisJson = JSON.stringify(allowed_apis);
-            } else if (typeof allowed_apis === 'string') {
-                if (allowed_apis === 'all') {
-                    allowedApisJson = '["all"]';
-                } else {
-                    const apiArray = allowed_apis.split(',').map(api => api.trim()).filter(api => api);
-                    allowedApisJson = JSON.stringify(apiArray);
+        const isCustomEnabled = req.body.enable_custom === 'on' || req.body.enable_custom === true;
+        
+        if (isCustomEnabled && (!custom_key || custom_key.trim() === '')) {
+            return res.status(400).send('❌ Please enter a custom key or disable custom key option');
+        }
+        
+        function createKey(apiKey, isCustom) {
+            let expires_at = null;
+            const now = new Date();
+            if (expiry === '7d') expires_at = new Date(now.getTime() + (7 * 24 * 60 * 60 * 1000));
+            else if (expiry === '15d') expires_at = new Date(now.getTime() + (15 * 24 * 60 * 60 * 1000));
+            else if (expiry === '1m') expires_at = new Date(now.getTime() + (30 * 24 * 60 * 60 * 1000));
+            else if (expiry === '1y') expires_at = new Date(now.getTime() + (365 * 24 * 60 * 60 * 1000));
+            
+            let allowedApisJson = '["all"]';
+            if (allowed_apis) {
+                if (Array.isArray(allowed_apis)) {
+                    allowedApisJson = JSON.stringify(allowed_apis);
+                } else if (typeof allowed_apis === 'string') {
+                    if (allowed_apis === 'all') {
+                        allowedApisJson = '["all"]';
+                    } else {
+                        const apiArray = allowed_apis.split(',').map(api => api.trim()).filter(api => api);
+                        allowedApisJson = JSON.stringify(apiArray);
+                    }
                 }
             }
+            
+            const isUnlimited = unlimited_hits === 'true' || unlimited_hits === 'on';
+            const rateLimitEnabled = isUnlimited ? 0 : (rate_limit_enabled === 'on' || rate_limit_enabled === 'true' ? 1 : 0);
+            
+            DB.api_keys.push({
+                id: DB.next_id++,
+                key: apiKey,
+                name: name,
+                owner_username: OWNER,
+                owner_channel: CHANNEL,
+                expires_at: expires_at ? expires_at.toISOString() : null,
+                unlimited_hits: isUnlimited ? 1 : 0,
+                allowed_apis: allowedApisJson,
+                is_custom: isCustom ? 1 : 0,
+                status: 'active',
+                hits: 0,
+                rate_limit_enabled: rateLimitEnabled,
+                rate_limit_per_day: isUnlimited ? 0 : (parseInt(rate_limit_per_day) || 100),
+                rate_limit_per_hour: isUnlimited ? 0 : (parseInt(rate_limit_per_hour) || 20),
+                rate_limit_per_minute: isUnlimited ? 0 : (parseInt(rate_limit_per_minute) || 5),
+                created_at: new Date().toISOString()
+            });
+            
+            console.log('✅ Key created successfully:', apiKey);
+            res.redirect('/admin/dashboard');
         }
         
-        const isUnlimited = unlimited_hits === 'true' || unlimited_hits === 'on';
-        const rateLimitEnabled = isUnlimited ? 0 : (rate_limit_enabled === 'on' || rate_limit_enabled === 'true' ? 1 : 0);
-        
-        DB.api_keys.push({
-            id: DB.next_id++,
-            key: apiKey,
-            name: name,
-            owner_username: OWNER,
-            owner_channel: CHANNEL,
-            expires_at: expires_at ? expires_at.toISOString() : null,
-            unlimited_hits: isUnlimited ? 1 : 0,
-            allowed_apis: allowedApisJson,
-            is_custom: isCustom ? 1 : 0,
-            status: 'active',
-            hits: 0,
-            rate_limit_enabled: rateLimitEnabled,
-            rate_limit_per_day: isUnlimited ? 0 : (parseInt(rate_limit_per_day) || 100),
-            rate_limit_per_hour: isUnlimited ? 0 : (parseInt(rate_limit_per_hour) || 20),
-            rate_limit_per_minute: isUnlimited ? 0 : (parseInt(rate_limit_per_minute) || 5),
-            created_at: new Date().toISOString()
-        });
-        
-        console.log('✅ Key created successfully:', apiKey);
-        res.redirect('/admin/dashboard');
-    }
-    
-    if (isCustomEnabled && custom_key && custom_key.trim() !== '') {
-        let apiKey = custom_key.trim().toUpperCase();
-        apiKey = apiKey.replace(/[^A-Z0-9_]/g, '');
-        
-        if (apiKey.length < 3) {
-            return res.status(400).send('❌ Custom key must be at least 3 characters');
+        if (isCustomEnabled && custom_key && custom_key.trim() !== '') {
+            let apiKey = custom_key.trim().toUpperCase();
+            apiKey = apiKey.replace(/[^A-Z0-9_]/g, '');
+            
+            if (apiKey.length < 3) {
+                return res.status(400).send('❌ Custom key must be at least 3 characters');
+            }
+            
+            const existing = DB.api_keys.find(k => k.key === apiKey);
+            if (existing) {
+                return res.status(400).send('❌ Key already exists: ' + apiKey);
+            }
+            createKey(apiKey, true);
+        } else {
+            let apiKey = 'OSINT_' + Math.random().toString(36).substring(2, 18).toUpperCase();
+            createKey(apiKey, false);
         }
-        
-        const existing = DB.api_keys.find(k => k.key === apiKey);
-        if (existing) {
-            return res.status(400).send('❌ Key already exists: ' + apiKey);
-        }
-        createKey(apiKey, true);
-    } else {
-        let apiKey = 'OSINT_' + Math.random().toString(36).substring(2, 18).toUpperCase();
-        createKey(apiKey, false);
+    } catch (error) {
+        console.error('Generate key error:', error);
+        res.status(500).send('Error generating key: ' + error.message);
     }
 });
 
 // ============ DELETE KEY ============
-app.post('/admin/delete-key', requireAuth, async (req, res) => {
+app.post('/admin/delete-key', requireAuth, (req, res) => {
     try {
         const { id } = req.body;
         if (!id) {
@@ -463,7 +483,7 @@ app.post('/admin/delete-key', requireAuth, async (req, res) => {
 });
 
 // ============ TOGGLE STATUS ============
-app.post('/admin/toggle-status', requireAuth, async (req, res) => {
+app.post('/admin/toggle-status', requireAuth, (req, res) => {
     try {
         const { id, status } = req.body;
         const key = DB.api_keys.find(k => k.id === parseInt(id));
@@ -477,7 +497,7 @@ app.post('/admin/toggle-status', requireAuth, async (req, res) => {
 });
 
 // ============ UPDATE RATE LIMIT ============
-app.post('/head-admin/update-rate-limit', requireHeadAdmin, async (req, res) => {
+app.post('/head-admin/update-rate-limit', requireHeadAdmin, (req, res) => {
     try {
         const { key_id, unlimited_hits, rate_limit_enabled, rate_limit_per_day, rate_limit_per_hour, rate_limit_per_minute } = req.body;
         const key = DB.api_keys.find(k => k.id === parseInt(key_id));
@@ -524,7 +544,7 @@ app.post('/head-admin/create-admin', requireHeadAdmin, async (req, res) => {
 });
 
 // ============ REMOVE ADMIN ============
-app.post('/head-admin/remove-admin', requireHeadAdmin, async (req, res) => {
+app.post('/head-admin/remove-admin', requireHeadAdmin, (req, res) => {
     try {
         const { admin_id } = req.body;
         if (!admin_id) return res.json({ error: 'Admin ID required' });
@@ -555,28 +575,12 @@ app.post('/reset-all-passwords', async (req, res) => {
         if (sahil) {
             sahil.password = sahilHash;
             sahil.role = 'head_admin';
-        } else {
-            DB.users.push({
-                id: DB.next_id++,
-                username: 'sahil',
-                password: sahilHash,
-                role: 'head_admin',
-                created_at: new Date().toISOString()
-            });
         }
         
         let superadmin = DB.users.find(u => u.username === 'superadmin');
         if (superadmin) {
             superadmin.password = superadminHash;
             superadmin.role = 'admin';
-        } else {
-            DB.users.push({
-                id: DB.next_id++,
-                username: 'superadmin',
-                password: superadminHash,
-                role: 'admin',
-                created_at: new Date().toISOString()
-            });
         }
         
         res.json({ 
@@ -651,7 +655,7 @@ app.all('/api/:endpoint', globalLimiter, async (req, res) => {
     }
 });
 
-app.get('/api-info', async (req, res) => {
+app.get('/api-info', (req, res) => {
     const apis = DB.available_apis.filter(a => a.is_active === 1);
     
     res.json({ 
@@ -688,7 +692,7 @@ app.listen(PORT, () => {
     console.log('🔐 Admin: superadmin / sexy');
     console.log(`✅ Owner: ${OWNER}`);
     console.log(`✅ Channel: ${CHANNEL}`);
-    console.log('✅ In-Memory Database Ready');
+    console.log('✅ Server Ready');
     console.log('=====================================\n');
 });
 
